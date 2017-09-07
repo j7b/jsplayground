@@ -1,0 +1,20 @@
+<script src="jsplayground.js"></script>
+<script>
+    Go.Compile(`
+    package main
+
+    func main() {
+        println("Hello World")
+    }
+    `)
+    .then((js) => {
+        eval(js);
+    });
+</script>
+<h1>Printing Hello World to console</h1>
+<pre>package main
+       
+func main() {
+    println("Hello World")
+}
+</pre>
