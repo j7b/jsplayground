@@ -58,7 +58,7 @@ func main() {
 		if err != nil {
 			log.Fatal(string(o))
 		}
-		for _, pk := range args {
+		for _, pk := range fa {
 			m, err := travail.Map(pk, filepath.Join(td, "src", filepath.FromSlash(pk)))
 			if err != nil {
 				log.Printf("Couldn't add %s for imports.json", pk)
