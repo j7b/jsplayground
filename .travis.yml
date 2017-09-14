@@ -1,0 +1,29 @@
+language: go
+
+go:
+  - 1.9
+
+install:
+  - go get -v github.com/j7b/jsplayground
+  - go get github.com/gopherjs/gopherjs
+
+script:
+  - mv ~/go/bin ~/bin
+  - go test -v github.com/j7b/jsplayground/...
+  - gopherjs install github.com/j7b/jsplayground
+  - jsplayground
+  - mv /tmp/jsplayground-*/pkg .
+  - mv ~/go/bin/*.* .
+  - rm -rf ~/go ~/bin
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+  repo: github.com/j7b/jsplayground
+  target_branch: gh-pages
+
+#   on:
+#    branch: master 
+
+

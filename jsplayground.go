@@ -55,6 +55,7 @@ type Go struct {
 	packagerr     map[string]error
 	importContext *compiler.ImportContext
 	code          []byte
+	packageuri    string
 }
 
 func (g *Go) loadpkg(path string) {
@@ -67,7 +68,7 @@ func (g *Go) loadpkg(path string) {
 	if _, ok := g.packagerr[path]; ok {
 		return
 	}
-	res, err := http.Get("pkg/" + path + ".a")
+	res, err := http.Get(g.packageuri + "pkg/" + path + ".a")
 	if err != nil {
 		g.packagerr[path] = err
 		return
@@ -88,6 +89,10 @@ func (g *Go) loadpkg(path string) {
 		return
 	}
 	g.packages[path] = p
+}
+
+func (g *Go) PackageURI(uri string) {
+	g.packageuri = uri
 }
 
 func (g *Go) RedirectConsole(f func(string)) {
