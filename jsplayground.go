@@ -169,9 +169,8 @@ func (g *Go) Format(src string, imports bool) *js.Object {
 var getting = make(map[string]struct{})
 
 func imports() {
-	err := important.Imports()
-	if err != nil {
-		println("additional imports: " + err.Error())
+	if err := important.Imports(); err != nil {
+		js.Global.Get("console").Call("warn", "additional imports: " + err.Error())
 	}
 }
 
