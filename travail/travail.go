@@ -54,38 +54,3 @@ func Map(ipath, dir string) (map[string]string, error) {
 	}
 	return m, nil
 }
-
-/*
-func main() {
-	context := build.Default
-	_, err := context.Import("github.com/hajimehoshi/ebiten", "/Volumes/Things/Playground/src/github.com/hajimehoshi/ebiten", build.IgnoreVendor)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pkgs, err := parser.ParseDir(fset, "/Volumes/Things/Playground/src/github.com/hajimehoshi/ebiten", nil, parser.AllErrors)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pkg := pkgs["ebiten"]
-	ast.PackageExports(pkg)
-	for _, f := range pkg.Files {
-		for _, d := range f.Decls {
-			switch t := d.(type) {
-			case *ast.GenDecl:
-				for _, s := range t.Specs {
-					switch t := s.(type) {
-					case *ast.TypeSpec:
-						log.Println(t.Name)
-					case *ast.ValueSpec:
-						for _, v := range t.Names {
-							log.Println(v)
-						}
-					}
-				}
-			case *ast.FuncDecl:
-				log.Println(t.Name)
-			}
-		}
-	}
-}
-*/
