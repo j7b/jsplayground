@@ -14,14 +14,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gopherjs/gopherjs/compiler"
 	"github.com/gopherjs/gopherjs/js"
 	"github.com/j7b/jsplayground/important"
 )
-
-var mustImport bool
 
 var errAgain = fmt.Errorf("try again")
 
@@ -128,9 +125,7 @@ func (g *Go) compile(resolve, reject func(interface{})) {
 			reject(err.Error())
 			return
 		}
-		mustImport = true
 		mainPkg, err := compiler.Compile("main", []*ast.File{file}, fileSet, g.importContext, false)
-		mustImport = false
 		g.packages["main"] = mainPkg
 		if err != nil {
 			if list, ok := err.(compiler.ErrorList); ok {
@@ -145,11 +140,6 @@ func (g *Go) compile(resolve, reject func(interface{})) {
 			return
 		}
 		var allPkgs []*compiler.Archive
-		allPkgs, err = compiler.ImportDependencies(mainPkg, g.importContext.Import)
-		for len(getting) > 0 {
-			time.Sleep(time.Millisecond)
-			allPkgs, err = compiler.ImportDependencies(mainPkg, g.importContext.Import)
-		}
 		allPkgs, err = compiler.ImportDependencies(mainPkg, g.importContext.Import)
 		if err != nil {
 			reject(err.Error())
@@ -166,8 +156,6 @@ func (g *Go) Format(src string, imports bool) *js.Object {
 	f := &formatter{code: code, imports: imports}
 	return promise(f.format)
 }
-
-var getting = make(map[string]struct{})
 
 func imports() {
 	if err := important.Imports(); err != nil {
@@ -188,59 +176,28 @@ func main() {
 			if err, found := g.packagerr[path]; found {
 				return nil, err
 			}
-			if mustImport {
-				res, err := http.Get("pkg/" + path + ".a")
-				if err != nil {
-					g.packagerr[path] = err
-					return nil, err
-				}
-				defer res.Body.Close()
-				if res.StatusCode != http.StatusOK {
-					g.packagerr[path] = fmt.Errorf(res.Status)
-					return nil, err
-				}
-				b, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					g.packagerr[path] = err
-					return nil, err
-				}
-				p, err := compiler.ReadArchive(path+".a", path, bytes.NewReader(b), g.importContext.Packages)
-				if err != nil {
-					g.packagerr[path] = err
-					return nil, err
-				}
-				g.packages[path] = p
-				return p, nil
+			res, err := http.Get("pkg/" + path + ".a")
+			if err != nil {
+				g.packagerr[path] = err
+				return nil, err
 			}
-			if _, ok := getting[path]; ok {
-				return new(compiler.Archive), nil
+			defer res.Body.Close()
+			if res.StatusCode != http.StatusOK {
+				g.packagerr[path] = fmt.Errorf(res.Status)
+				return nil, err
 			}
-			getting[path] = struct{}{}
-			go func() {
-				defer delete(getting, path)
-				res, err := http.Get("pkg/" + path + ".a")
-				if err != nil {
-					g.packagerr[path] = err
-					return
-				}
-				defer res.Body.Close()
-				if res.StatusCode != http.StatusOK {
-					g.packagerr[path] = fmt.Errorf(res.Status)
-					return
-				}
-				b, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					g.packagerr[path] = err
-					return
-				}
-				p, err := compiler.ReadArchive(path+".a", path, bytes.NewReader(b), g.importContext.Packages)
-				if err != nil {
-					g.packagerr[path] = err
-					return
-				}
-				g.packages[path] = p
-			}()
-			return new(compiler.Archive), nil
+			b, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				g.packagerr[path] = err
+				return nil, err
+			}
+			p, err := compiler.ReadArchive(path+".a", path, bytes.NewReader(b), g.importContext.Packages)
+			if err != nil {
+				g.packagerr[path] = err
+				return nil, err
+			}
+			g.packages[path] = p
+			return p, nil
 		},
 	}
 	js.Global.Set("Go", js.MakeWrapper(g))
