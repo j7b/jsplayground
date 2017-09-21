@@ -22,8 +22,6 @@ import (
 
 var errAgain = fmt.Errorf("try again")
 
-var fileSet = token.NewFileSet()
-
 type formatter struct {
 	code    []byte
 	imports bool
@@ -107,6 +105,7 @@ func (g *Go) Compile(src string) *js.Object {
 
 func (g *Go) compile(resolve, reject func(interface{})) {
 	go func() {
+		fileSet := token.NewFileSet()
 		defer func() {
 			if r := recover(); r != nil {
 				reject(fmt.Sprintf("PANIC: %#v", r))
