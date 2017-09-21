@@ -21,6 +21,8 @@ import (
 	"github.com/j7b/jsplayground/important"
 )
 
+var mustImport bool
+
 var errAgain = fmt.Errorf("try again")
 
 var fileSet = token.NewFileSet()
@@ -110,7 +112,7 @@ func (g *Go) compile(resolve, reject func(interface{})) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				reject(r)
+				reject(fmt.Sprintf("PANIC: %#v", r))
 			}
 		}()
 		file, err := parser.ParseFile(fileSet, "prog.go", g.code, parser.ParseComments)
@@ -126,11 +128,9 @@ func (g *Go) compile(resolve, reject func(interface{})) {
 			reject(err.Error())
 			return
 		}
+		mustImport = true
 		mainPkg, err := compiler.Compile("main", []*ast.File{file}, fileSet, g.importContext, false)
-		for len(getting) > 0 {
-			time.Sleep(time.Millisecond)
-			mainPkg, err = compiler.Compile("main", []*ast.File{file}, fileSet, g.importContext, false)
-		}
+		mustImport = false
 		g.packages["main"] = mainPkg
 		if err != nil {
 			if list, ok := err.(compiler.ErrorList); ok {
@@ -150,6 +150,7 @@ func (g *Go) compile(resolve, reject func(interface{})) {
 			time.Sleep(time.Millisecond)
 			allPkgs, err = compiler.ImportDependencies(mainPkg, g.importContext.Import)
 		}
+		allPkgs, err = compiler.ImportDependencies(mainPkg, g.importContext.Import)
 		if err != nil {
 			reject(err.Error())
 			return
@@ -170,7 +171,7 @@ var getting = make(map[string]struct{})
 
 func imports() {
 	if err := important.Imports(); err != nil {
-		js.Global.Get("console").Call("warn", "additional imports: " + err.Error())
+		js.Global.Get("console").Call("warn", "additional imports: "+err.Error())
 	}
 }
 
@@ -186,6 +187,30 @@ func main() {
 			}
 			if err, found := g.packagerr[path]; found {
 				return nil, err
+			}
+			if mustImport {
+				res, err := http.Get("pkg/" + path + ".a")
+				if err != nil {
+					g.packagerr[path] = err
+					return nil, err
+				}
+				defer res.Body.Close()
+				if res.StatusCode != http.StatusOK {
+					g.packagerr[path] = fmt.Errorf(res.Status)
+					return nil, err
+				}
+				b, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					g.packagerr[path] = err
+					return nil, err
+				}
+				p, err := compiler.ReadArchive(path+".a", path, bytes.NewReader(b), g.importContext.Packages)
+				if err != nil {
+					g.packagerr[path] = err
+					return nil, err
+				}
+				g.packages[path] = p
+				return p, nil
 			}
 			if _, ok := getting[path]; ok {
 				return new(compiler.Archive), nil
