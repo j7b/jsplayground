@@ -37,17 +37,16 @@ type formatter struct {
 func (f *formatter) format(resolve, reject func(interface{})) {
 	var out []byte
 	var err error
-	switch f.imports {
-	case true:
+	if f.imports {
 		out, err = important.Process(f.code)
-	case false:
+	} else {
 		out, err = format.Source(f.code)
 	}
-	if err == nil {
-		resolve(string(out))
+	if err != nil {
+		reject(err.Error())
 		return
 	}
-	reject(err.Error())
+	resolve(string(out))
 }
 
 func promise(f func(resolve, reject func(interface{}))) *js.Object {
