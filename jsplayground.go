@@ -21,6 +21,8 @@ import (
 	"github.com/j7b/jsplayground/important"
 )
 
+var syncImport bool
+
 var mustImport bool
 
 var errAgain = fmt.Errorf("try again")
@@ -97,6 +99,10 @@ func (g *Go) PackageURI(uri string) {
 	g.packageuri = uri
 }
 
+func (g *Go) SyncImport(b bool) {
+	syncImport = b
+}
+
 func (g *Go) RedirectConsole(f func(string)) {
 	js.Global.Set("goPrintToConsole", js.InternalObject(func(b []byte) {
 		f(string(b))
@@ -130,7 +136,7 @@ func (g *Go) compile(resolve, reject func(interface{})) {
 		}
 		mustImport = true
 		mainPkg, err := compiler.Compile("main", []*ast.File{file}, fileSet, g.importContext, false)
-		mustImport = false
+		mustImport = syncImport
 		g.packages["main"] = mainPkg
 		if err != nil {
 			if list, ok := err.(compiler.ErrorList); ok {

@@ -12,6 +12,8 @@ This is a fork of the gopherjs playground. The main differences are the actual c
     Go.RedirectConsole(function(line))
     // PackageURI sets URI for loading packages
     Go.PackageURI(uri string)
+    // SyncImport synchronously loads package dependencies (may be slow)
+    Go.SyncImport(bool)
 
 ## TODO
 
